@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Service Maintenance Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header>
+    <span class="logo">🚗</span>
+    <h1>Car Service Maintenance Dashboard</h1>
+    <span class="spacer"></span>
+    <button id="themeToggle" title="Toggle dark mode">🌙</button>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card total">
+        <div class="icon">📋</div>
+        <div class="info">
+          <div class="label">Total Records</div>
+          <div class="value" id="statTotal">0</div>
+        </div>
+      </div>
+      <div class="stat-card due">
+        <div class="icon">⚠️</div>
+        <div class="info">
+          <div class="label">Overdue / Due</div>
+          <div class="value" id="statDue">0</div>
+        </div>
+      </div>
+      <div class="stat-card done">
+        <div class="icon">✅</div>
+        <div class="info">
+          <div class="label">Completed</div>
+          <div class="value" id="statDone">0</div>
+        </div>
+      </div>
+      <div class="stat-card cost">
+        <div class="icon">💰</div>
+        <div class="info">
+          <div class="label">Total Cost</div>
+          <div class="value" id="statCost">$0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Record Form -->
+    <div class="section-card">
+      <h2>➕ Add Service Record</h2>
+      <form id="serviceForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="formCar">Vehicle <span style="color:var(--danger)">*</span></label>
+            <input id="formCar" type="text" placeholder="e.g. Toyota Camry 2020" required />
+          </div>
+          <div class="form-group">
+            <label for="formService">Service Type <span style="color:var(--danger)">*</span></label>
+            <input id="formService" type="text" placeholder="e.g. Oil Change" required />
+          </div>
+          <div class="form-group">
+            <label for="formDate">Service Date <span style="color:var(--danger)">*</span></label>
+            <input id="formDate" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="formDueDate">Next Due Date</label>
+            <input id="formDueDate" type="date" />
+          </div>
+          <div class="form-group">
+            <label for="formCost">Cost ($)</label>
+            <input id="formCost" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label for="formStatus">Status</label>
+            <select id="formStatus">
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="formNotes">Notes</label>
+            <textarea id="formNotes" placeholder="Optional notes…"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" id="submitBtn" class="btn btn-primary">➕ Add Record</button>
+          <button type="button" id="cancelEdit" class="btn btn-secondary" style="display:none">✖ Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Records Table -->
+    <div class="section-card">
+      <h2>🔧 Service Records</h2>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="🔍 Search…" />
+        <select id="filterStatus">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="overdue">Overdue</option>
+        </select>
+        <select id="filterCar">
+          <option value="">All Vehicles</option>
+        </select>
+        <select id="sortSelect">
+          <option value="date-desc">Date ↓</option>
+          <option value="date-asc">Date ↑</option>
+          <option value="dueDate-asc">Due Date ↑</option>
+          <option value="dueDate-desc">Due Date ↓</option>
+          <option value="cost-desc">Cost ↓</option>
+          <option value="cost-asc">Cost ↑</option>
+          <option value="car-asc">Vehicle A–Z</option>
+        </select>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Vehicle</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Next Due</th>
+              <th>Cost</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+
+      <div id="pagination" class="pagination"></div>
+    </div>
+
+  </main>
+
+  <!-- ===== Edit Modal ===== -->
+  <div id="editModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit service record">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>✏️ Edit Service Record</h3>
+        <button id="editModalClose" class="modal-close" aria-label="Close">✕</button>
+      </div>
+      <form id="editForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editCar">Vehicle <span style="color:var(--danger)">*</span></label>
+            <input id="editCar" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editService">Service Type <span style="color:var(--danger)">*</span></label>
+            <input id="editService" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="editDate">Service Date <span style="color:var(--danger)">*</span></label>
+            <input id="editDate" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="editDueDate">Next Due Date</label>
+            <input id="editDueDate" type="date" />
+          </div>
+          <div class="form-group">
+            <label for="editCost">Cost ($)</label>
+            <input id="editCost" type="number" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="editStatus">Status</label>
+            <select id="editStatus">
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="editNotes">Notes</label>
+            <textarea id="editNotes"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+          <button type="button" id="editCancelBtn" class="btn btn-secondary">✖ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Toast Container ===== -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+  <script>
+    // Wire up the modal Cancel button
+    document.getElementById('editCancelBtn').addEventListener('click', () => {
+      document.getElementById('editModal').classList.remove('open');
+    });
+  </script>
+</body>
+</html>
