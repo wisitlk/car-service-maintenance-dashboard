@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoCare Intelligence — Full Feature Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --green: #34d399; --blue: #4a9eff; --red: #f87171; --amber: #fbbf24;
+    --glass: rgba(15, 17, 23, 0.8);
+    --border: rgba(255, 255, 255, 0.15);
+    --text: #ffffff; --text-dim: #94a3b8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Segoe UI', 'Noto Sans Thai', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    background: url('https://images.unsplash.com/photo-1632733711679-5292d69636c3?q=80&w=2000&auto=format&fit=crop') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.55); z-index: -1;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px; height: 100vh; background: var(--glass); backdrop-filter: blur(25px);
+    border-right: 1px solid var(--border); position: fixed; display: flex; flex-direction: column; z-index: 100;
+  }
+  .logo { padding: 35px 20px; border-bottom: 1px solid var(--border); text-align: center; }
+  .logo h2 { color: var(--blue); letter-spacing: 2px; text-transform: uppercase; }
+  .nav-item { padding: 16px 25px; color: #cbd5e1; cursor: pointer; transition: 0.3s; font-size: 14px; border-right: 4px solid transparent; }
+  .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: white; border-right-color: var(--blue); }
+
+  /* Main Area */
+  .main { margin-left: 260px; width: calc(100% - 260px); padding: 35px; }
+  .page { display: none; animation: fadeIn 0.4s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Glass Card */
+  .card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 16px; padding: 25px; margin-bottom: 25px; }
+
+  /* KPI Section (Slide 13) */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+  .kpi-card { background: var(--glass); padding: 18px; border-radius: 12px; border: 1px solid var(--border); }
+  .prog-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 10px 0; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; transition: 1s ease-in-out; }
+
+  /* Notification Toast */
+  #notif-box { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+  .toast { background: #1e293b; color: white; padding: 15px 20px; border-radius: 8px; border-left: 5px solid var(--blue); margin-bottom: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); animation: slideIn 0.3s forwards; }
+  @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th { text-align: left; padding: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+  td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #000; }
+
+  /* Intervention Cards (Slide 11) */
+  .camp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .camp-card { padding: 20px; border-radius: 12px; background: var(--glass); border-top: 5px solid #fff; }
+
+  /* Alerts (Slide 12) */
+  .alert-push { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border-left: 5px solid var(--blue); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="notif-box"></div>
+
+<div class="sidebar">
+  <div class="logo">
+    <h2>AutoCare</h2>
+    <p style="font-size: 10px; color: var(--text-dim);">PROFESSIONAL CRM</p>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" onclick="switchPage('overview', this)">📊 Telemetry Overview</div>
+    <div class="nav-item" onclick="switchPage('alerts', this)">🚨 Prediction Alerts</div>
+    <div class="nav-item" onclick="switchPage('segments', this)">👥 ลูกค้าทั้งหมด (80)</div>
+    <div class="nav-item" onclick="switchPage('campaigns', this)">📣 CRM Interventions</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- PAGE: OVERVIEW (Slide 13 & Telemetry Chart) -->
+  <div id="overview" class="page active">
+    <header style="margin-bottom: 30px;">
+      <h1>Telemetry Dashboard</h1>
+      <p style="color: var(--text-dim);">Business Success & Customer Clusters (Slide 13)</p>
+    </header>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <small style="color: var(--text-dim);">RETURN RATE (VIP)</small>
+        <div style="font-size: 24px; font-weight: bold;">+22%</div>
+        <div class="prog-bar"><div class="prog-fill" style="width: 85%; background: var(--blue);"></div></div>
+        <small style="color: var(--green);">Target: +20%</small>
+      </div>
+      <div class="kpi-card">
+        <small style="color: var(--text-dim);">AVG WAIT TIME</small>
+        <div style="font-size: 24px; font-weight: bold;">52 นาที</div>
+        <div class="prog-bar"><div class="prog-fill" style="width: 75%; background: var(--amber);"></div></div>
+        <small style="color: var(--amber);">Target: < 60m</small>
+      </div>
+      <div class="kpi-card">
+        <small style="color: var(--text-dim);">CSI GOAL</small>
+        <div style="font-size: 24px; font-weight: bold;">82.5%</div>
+        <div class="prog-bar"><div class="prog-fill" style="width: 82%; background: var(--green);"></div></div>
+        <small style="color: var(--green);">Target: > 80</small>
+      </div>
+      <div class="kpi-card">
+        <small style="color: var(--text-dim);">CHURN REDUCTION</small>
+        <div style="font-size: 24px; font-weight: bold;">-45%</div>
+        <div class="prog-bar"><div class="prog-fill" style="width: 65%; background: var(--red);"></div></div>
+        <small style="color: var(--red);">Target: -60%</small>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom: 20px;">Telemetry Analysis: CSI vs Wait Time (3 Clusters)</h3>
+      <div style="height: 400px;"><canvas id="telemetryChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PAGE: ALERTS (Slide 12) -->
+  <div id="alerts" class="page">
+    <div class="card">
+      <h3>ระบบการแจ้งเตือนเชิงรุก (Slide 12)</h3>
+      <p style="color:var(--text-dim); margin-bottom: 20px;">ป้ายชื่อ K-Means + Naive Bayes P(Return) = การแจ้งเตือนอัตโนมัติ</p>
+      <div id="alert-list"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: SEGMENTS (80 Customers) -->
+  <div id="segments" class="page">
+    <div class="card">
+      <h3>ฐานข้อมูลลูกค้า (Simulation 80 Records)</h3>
+      <div style="max-height: 600px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ชื่อลูกค้า</th>
+              <th>Cluster</th>
+              <th>CSI Score</th>
+              <th>เวลารอ</th>
+              <th>P(Return)</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="customer-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CAMPAIGNS (Slide 11) -->
+  <div id="campaigns" class="page">
+    <h3 style="margin-bottom: 25px;">กลไกการแทรกแซง CRM (Slide 11)</h3>
+    <div class="camp-grid">
+      <div class="camp-card" style="border-top-color: var(--blue);">
+        <h4 style="color: var(--blue);">VIP Loyalty Gold</h4>
+        <p style="font-size: 12px; margin: 15px 0; color: var(--text-dim);">สำหรับกลุ่ม A: รักษาฐานลูกค้าหลัก มอบสิทธิ์ตรวจเช็คระยะฟรีรายปี</p>
+        <button onclick="notify('ส่ง VIP Offer สำเร็จ', 'var(--blue)')" style="width:100%; padding:10px; background:var(--blue); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">ดำเนินการ</button>
+      </div>
+      <div class="camp-card" style="border-top-color: var(--amber);">
+        <h4 style="color: var(--amber);">Fast Lane Service</h4>
+        <p style="font-size: 12px; margin: 15px 0; color: var(--text-dim);">สำหรับกลุ่ม B: ลดความยุ่งยากในการรอคอย อัปเดตสถานะผ่าน LINE</p>
+        <button onclick="notify('ส่งแจ้งเตือน Fast Lane สำเร็จ', 'var(--amber)')" style="width:100%; padding:10px; background:var(--amber); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">ดำเนินการ</button>
+      </div>
+      <div class="camp-card" style="border-top-color: var(--red);">
+        <h4 style="color: var(--red);">Recovery Value Pack</h4>
+        <p style="font-size: 12px; margin: 15px 0; color: var(--text-dim);">สำหรับกลุ่ม C: ดึงลูกค้ากลับด้วยความคุ้มค่า แพ็กเกจราคา 790.-</p>
+        <button onclick="notify('ส่ง Offer กู้คืนสำเร็จ', 'var(--red)')" style="width:100%; padding:10px; background:var(--red); border:none; border-radius:5px; color:white; font-weight:bold; cursor:pointer;">ดำเนินการด่วน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- 1. DATA GENERATOR (80 รายการ) ---
+const thaiNames = ["สมชาย", "วิภา", "ประยุทธ", "นฤมล", "อนุชา", "กัลยา", "ธนาคม", "รัตนา", "พิชัย", "สุดาพร", "วิทยา", "มณีรัตน์", "อดิศร", "ปิยะมาศ", "สุรชัย", "จิราภรณ์", "เกรียงไกร", "วรรณภา", "ประสิทธิ์", "ศิริพร", "ดำรง", "สมหญิง", "วินัย", "พรทิพย์", "ชาญณรงค์", "วนิดา", "สมศักดิ์", "นิตยา", "อภิชาต", "ชลธิชา", "ธีระ", "สุภาพร", "อนันต์", "ลักษณา", "วิโรจน์", "กานดา", "พิเชษฐ์", "สมฤดี", "ธวัชชัย", "ปราณี", "ชัยวัฒน์", "ทิพย์วรรณ", "สุทธิพงษ์", "นวลจันทร์", "วีระ", "สาวิตรี", "นิรันดร์", "มาลี", "ศักดิ์ชัย", "วิไลวรรณ", "กมล", "สุกัญญา", "ประพันธ์", "อรอนงค์", "บุญมา", "เพชรรัตน์", "ธิติ", "อุบล", "สมบูรณ์", "ชุติมา", "พจน์", "อำไพ", "เดชา", "ยุพา", "สรายุทธ", "สมสมัย", "ไพบูลย์", "วลัยพร", "สุขสันต์", "ฉลอง", "ขวัญใจ", "บุญรัตน์", "ปาริชาต", "วิชิต", "มยุรา", "สมพงษ์", "นันทวรรณ", "สุภาณี", "ชัยเลิศ", "เก่งกาจ", "มานะ", "อารี"];
+
+const customers = thaiNames.map((name, i) => {
+    let cluster, csi, wait, p_return, status;
+    if (i < 32) { // กลุ่ม A - VIP (Slide 10)
+        cluster = "เขียว (A)";
+        csi = Math.floor(Math.random() * (98 - 80 + 1)) + 80;
+        wait = Math.floor(Math.random() * (50 - 20 + 1)) + 20;
+        p_return = Math.floor(Math.random() * (99 - 90 + 1)) + 90;
+        status = "รักษาไว้";
+    } else if (i < 60) { // กลุ่ม B - Speed Sensitive (Slide 10)
+        cluster = "ฟ้า (B)";
+        csi = Math.floor(Math.random() * (78 - 60 + 1)) + 60;
+        wait = Math.floor(Math.random() * (110 - 80 + 1)) + 80;
+        p_return = Math.floor(Math.random() * (75 - 50 + 1)) + 50;
+        status = "เฝ้าระวัง";
+    } else { // กลุ่ม C - Price Sensitive (Slide 10)
+        cluster = "แดง (C)";
+        csi = Math.floor(Math.random() * (60 - 40 + 1)) + 40;
+        wait = Math.floor(Math.random() * (95 - 65 + 1)) + 65;
+        p_return = Math.floor(Math.random() * (30 - 5 + 1)) + 5;
+        status = "แทรกแซง";
+    }
+    return { name: name + " " + (i+1), cluster, csi, wait, p_return, status };
+});
+
+// --- 2. CORE FUNCTIONS ---
+function switchPage(pageId, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function notify(msg, color) {
+    const box = document.getElementById('notif-box');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.borderLeftColor = color;
+    toast.innerHTML = `<b>CRM Update:</b> ${msg}`;
+    box.appendChild(toast);
+    setTimeout(() => { toast.style.transform = 'translateX(120%)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// Populate Table & Alerts
+const tbody = document.getElementById('customer-table');
+const alertList = document.getElementById('alert-list');
+
+customers.forEach((c, i) => {
+    const color = c.cluster.includes('เขียว') ? 'var(--green)' : c.cluster.includes('ฟ้า') ? 'var(--blue)' : 'var(--red)';
+    
+    // Table
+    tbody.innerHTML += `
+        <tr>
+            <td><b>${c.name}</b></td>
+            <td><span class="badge" style="background:${color}">${c.cluster}</span></td>
+            <td>${c.csi}</td>
+            <td>${c.wait} น.</td>
+            <td style="font-weight:bold; color:${color}">${c.p_return}%</td>
+            <td><span class="badge" style="border:1px solid ${color}; color:${color}; background:none;">${c.status}</span></td>
+        </tr>
+    `;
+
+    // Alerts (สุ่มแสดง 5 รายการในหน้า Alert)
+    if (i % 15 === 0) {
+        alertList.innerHTML += `
+            <div class="alert-push" style="border-left-color:${color}">
+                <div>
+                    <small>PUSH NOTIFICATION (Naive Bayes Logic)</small>
+                    <h4>ลูกค้า: ${c.name} | P(การกลับมา): ${c.p_return}%</h4>
+                    <p style="font-size:12px">Cluster: ${c.cluster} | สถานะปัจจุบัน: <b>${c.status}</b></p>
+                </div>
+                <button onclick="notify('ดำเนินการ ${c.status} เรียบร้อย', '${color}')" style="padding:6px 12px; cursor:pointer; font-size:11px;">ดำเนินการ</button>
+            </div>
+        `;
+    }
+});
+
+// --- 3. TELEMETRY CHART (Centroid Stars & Colors) ---
+const ctx = document.getElementById('telemetryChart').getContext('2d');
+new Chart(ctx, {
+    type: 'scatter',
+    data: {
+        datasets: [
+            {
+                label: 'กลุ่มเขียว (VIP)',
+                data: customers.filter(c => c.cluster.includes('เขียว')).map(c => ({x: c.wait, y: c.csi})),
+                backgroundColor: 'rgba(52, 211, 153, 0.7)',
+                pointRadius: 6
+            },
+            {
+                label: 'กลุ่มฟ้า (Speed)',
+                data: customers.filter(c => c.cluster.includes('ฟ้า')).map(c => ({x: c.wait, y: c.csi})),
+                backgroundColor: 'rgba(74, 158, 255, 0.7)',
+                pointRadius: 6
+            },
+            {
+                label: 'กลุ่มแดง (Price)',
+                data: customers.filter(c => c.cluster.includes('แดง')).map(c => ({x: c.wait, y: c.csi})),
+                backgroundColor: 'rgba(248, 113, 113, 0.7)',
+                pointRadius: 6
+            },
+            {
+                label: 'Centroids (Stars)',
+                data: [{x: 35, y: 88}, {x: 95, y: 68}, {x: 80, y: 52}],
+                backgroundColor: 'white',
+                pointStyle: 'star',
+                pointRadius: 15,
+                borderWidth: 2,
+                borderColor: 'white'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#fff' } } },
+        scales: {
+            x: { title: { display: true, text: 'เวลารอ (นาที)', color: '#fff' }, min: 0, max: 130, ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            y: { title: { display: true, text: 'คะแนน CSI', color: '#fff' }, min: 40, max: 100, ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+        }
+    }
+});
+</script>
+
+</body>
+</html>
